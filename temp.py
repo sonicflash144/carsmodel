@@ -35,9 +35,9 @@ def load_CIFAR_batch(filename):
     with open(filename, 'rb') as f:
         datadict = load_pickle(f)
         X = datadict['data']
-        print(len(X[0]))
+        #print(len(X[0]))
         Y = datadict['labels']
-        X = X.reshape(10000,32, 32, 3)
+        X = X.reshape(10000, 32, 32, 3)
         #X = np.array(X)
         Y = np.array(Y)
         return X, Y
@@ -56,8 +56,8 @@ def load_CIFAR10(ROOT):
     del X, Y
     Xte, Yte = load_CIFAR_batch(os.path.join(ROOT, 'test_batch'))
     return Xtr, Ytr, Xte, Yte
-def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=10000):
-#def get_CIFAR10_data(num_training=2, num_validation=2, num_test=2):
+#def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=10000):
+def get_CIFAR10_data(num_training=10000, num_validation=200, num_test=2000):
     # Load the raw CIFAR-10 data
     cifar10_dir = './input/cifar-10-batches-py/'
     X_train, y_train, X_test, y_test = load_CIFAR10(cifar10_dir)
@@ -84,12 +84,14 @@ def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=10000):
 # Invoke the above function to get our data.
 x_train, y_train, x_val, y_val, x_test, y_test = get_CIFAR10_data()
 
+'''
 print('Train data shape: ', x_train.shape)
 print('Train labels shape: ', y_train.shape)
 print('Validation data shape: ', x_val.shape)
 print('Validation labels shape: ', y_val.shape)
 print('Test data shape: ', x_test.shape)
 print('Test labels shape: ', y_test.shape)
+'''
 
 # The images are index 0 of the dictionary
 # They are stored as a 3072 element vector so we need to reshape this into a tensor.
@@ -116,7 +118,7 @@ plt.axis('off');
 
 class myCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs={}):
-        if logs.get('accuracy') is not None and logs.get('accuracy') > 0.999:
+        if logs.get('accuracy') is not None and logs.get('accuracy') > 0.99:
             print("\nReached 99.9% accuracy so cancelling training!")
             self.model.stop_training = True
             
@@ -150,7 +152,7 @@ def train_cars_model():
         # 512 neuron hidden layer
         tf.keras.layers.Dense(512, activation='relu'),
         # Only 1 output neuron. It will contain a value from 0-1 where 0 for 1 class and 1 for the other
-        tf.keras.layers.Dense(numClasses, activation='sigmoid')
+        tf.keras.layers.Dense(numClasses, activation='softmax')
     ])
 
     # Compile the model
@@ -180,11 +182,12 @@ def train_cars_model():
     #print(y_test2.shape)
     
     train_datagen.fit(x_train)
+    train_datagen.fit(x_test)
     # fits the model on batches with real-time data augmentation:
     history= model.fit(
                 x_train, y_train2,  # prepared data
                 batch_size=6,
-                epochs=20,
+                epochs=15,
                 validation_data=(x_test, y_test2),
                 shuffle=True,
                 verbose=5,
@@ -198,27 +201,31 @@ def train_cars_model():
          #steps_per_epoch=len(x_train) / 32, epochs=15, callbacks=[callbacks])
     
 
-    #print("hi")
-
+    #plt.plot(history.history['accuracy'], label='accuracy')
+    #plt.plot(history.history['val_accuracy'], label = 'val_accuracy')
+    #plt.xlabel('Epoch')
+    #plt.ylabel('Accuracy')
+    #plt.ylim([0.5, 1])
+    #plt.legend(loc='lower right')
+    #test_loss, test_acc = model.evaluate((x_test, y_test2),  classes, verbose=2)
+        
     return history
+
 
 hist = train_cars_model()
 
 print(f"Your model reached the desired accuracy after {len(hist.epoch)} epochs")
-
-if not "accuracy" in hist.model.metrics_names:
-    print("Use 'accuracy' as metric when compiling your model.")
-else:
-    print("The metric was correctly defined.")
+print (hist.history['accuracy'])
 
 
-## save model
-save_path = './carsmodel.h5'
-hist.model.save(save_path)
+## save tensorflow model
+hist.model.save("my_model");
+
+'''
 ## load tensorflow model
-#model = keras.models.load_model(save_path)
-#print(model.summary())
-            
+new_model = tf.keras.models.load_model("my_model")
+print (new_model.history['accuracy'])
+'''
             
             
             
